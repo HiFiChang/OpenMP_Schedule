@@ -36,7 +36,9 @@ header = [
     "threads", 
     "reps", 
     "loop1_time_s", 
-    "loop2_time_s"
+    "loop2_time_s",
+    "loop1_sum_a",
+    "loop2_sum_c"
 ]
 with open(results_file, mode='w', newline='') as file:
     writer = csv.writer(file)
@@ -81,21 +83,25 @@ for n in N_VALUES:
                 print(f"    [Error] Execution failed:\n{result.stderr}")
                 continue
 
-            # 3. Parse the output to find timings
+            # 3. Parse the output to find timings and validation sums
             output = result.stdout
             try:
                 # Use regex to find the floating-point numbers in the specific lines
                 time1_match = re.search(r"Total time for \d+ reps of loop 1 = ([\d.]+)", output)
                 time2_match = re.search(r"Total time for \d+ reps of loop 2 = ([\d.]+)", output)
+                sum_a_match = re.search(r"Loop 1 check: Sum of a is ([-+]?[\d.]+(?:[eE][-+]?\d+)?)", output)
+                sum_c_match = re.search(r"Loop 2 check: Sum of c is ([-+]?[\d.]+(?:[eE][-+]?\d+)?)", output)
 
                 if not time1_match or not time2_match:
                     raise ValueError("Could not find time values in output.")
 
                 loop1_time = float(time1_match.group(1))
                 loop2_time = float(time2_match.group(1))
+                loop1_sum_a = float(sum_a_match.group(1)) if sum_a_match else None
+                loop2_sum_c = float(sum_c_match.group(1)) if sum_c_match else None
                 
                 # 4. Write the results to the CSV file
-                row = [n, schedule, chunk, THREADS, REPS, loop1_time, loop2_time]
+                row = [n, schedule, chunk, THREADS, REPS, loop1_time, loop2_time, loop1_sum_a, loop2_sum_c]
                 with open(results_file, mode='a', newline='') as file:
                     writer = csv.writer(file)
                     writer.writerow(row)
@@ -122,14 +128,18 @@ for n in N_VALUES:
         try:
             time1_match = re.search(r"Total time for \d+ reps of loop 1 = ([\d.]+)", output)
             time2_match = re.search(r"Total time for \d+ reps of loop 2 = ([\d.]+)", output)
+            sum_a_match = re.search(r"Loop 1 check: Sum of a is ([-+]?[\d.]+(?:[eE][-+]?\d+)?)", output)
+            sum_c_match = re.search(r"Loop 2 check: Sum of c is ([-+]?[\d.]+(?:[eE][-+]?\d+)?)", output)
 
             if not time1_match or not time2_match:
                 raise ValueError("Could not find time values in output.")
 
             loop1_time = float(time1_match.group(1))
             loop2_time = float(time2_match.group(1))
+            loop1_sum_a = float(sum_a_match.group(1)) if sum_a_match else None
+            loop2_sum_c = float(sum_c_match.group(1)) if sum_c_match else None
 
-            row = [n, schedule, "default", THREADS, REPS, loop1_time, loop2_time]
+            row = [n, schedule, "default", THREADS, REPS, loop1_time, loop2_time, loop1_sum_a, loop2_sum_c]
             with open(results_file, mode='a', newline='') as file:
                 writer = csv.writer(file)
                 writer.writerow(row)
@@ -158,14 +168,18 @@ for n in N_VALUES:
     try:
         time1_match = re.search(r"Total time for \d+ reps of loop 1 = ([\d.]+)", output)
         time2_match = re.search(r"Total time for \d+ reps of loop 2 = ([\d.]+)", output)
+        sum_a_match = re.search(r"Loop 1 check: Sum of a is ([-+]?[\d.]+(?:[eE][-+]?\d+)?)", output)
+        sum_c_match = re.search(r"Loop 2 check: Sum of c is ([-+]?[\d.]+(?:[eE][-+]?\d+)?)", output)
 
         if not time1_match or not time2_match:
             raise ValueError("Could not find time values in output.")
 
         loop1_time = float(time1_match.group(1))
         loop2_time = float(time2_match.group(1))
+        loop1_sum_a = float(sum_a_match.group(1)) if sum_a_match else None
+        loop2_sum_c = float(sum_c_match.group(1)) if sum_c_match else None
 
-        row = [n, "baseline", "n/a", 1, REPS, loop1_time, loop2_time]
+        row = [n, "baseline", "n/a", 1, REPS, loop1_time, loop2_time, loop1_sum_a, loop2_sum_c]
         with open(results_file, mode='a', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(row)
