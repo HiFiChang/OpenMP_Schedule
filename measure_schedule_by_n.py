@@ -15,11 +15,11 @@ results_dir = "results"
 results_file = os.path.join(results_dir, "schedule_by_n_results.csv")
 
 # Experiment parameters
-N_VALUES = [256, 512, 729, 1024, 1440]
+N_VALUES = [256, 512, 729, 1024, 1440, 2048, 2880, 4096, 6144, 8192]
 SCHEDULES = ["static", "dynamic", "guided"]
 CHUNK_SIZES = [1, 16, 64]
 THREADS = os.cpu_count() or 8 # Use all available cores, or 8 as a fallback
-REPS = 100 # Must match the 'reps' used in the C++ code if not passed via -D
+REPS = 1000 # Must match the 'reps' used in the C++ code if not passed via -D
 
 # --- Setup ---
 # Ensure the bin and results directories exist, and clear them for a fresh run
@@ -103,5 +103,75 @@ for n in N_VALUES:
             except (ValueError, IndexError) as e:
                 print(f"    [Error] Failed to parse output for N={n}, schedule={schedule}, chunk={chunk}: {e}")
                 print(f"      Output was:\n---\n{output}\n---")
+
+        # Also run one test per schedule using the default chunk size
+        print(f"  Running test: schedule={schedule}, chunk=default...")
+
+        env = os.environ.copy()
+        env["OMP_NUM_THREADS"] = str(THREADS)
+        env["OMP_SCHEDULE"] = f"{schedule}"
+
+        run_command = exe_file
+        result = subprocess.run(run_command, shell=True, capture_output=True, text=True, env=env)
+
+        if result.returncode != 0:
+            print(f"    [Error] Execution failed:\n{result.stderr}")
+            continue
+
+        output = result.stdout
+        try:
+            time1_match = re.search(r"Total time for \d+ reps of loop 1 = ([\d.]+)", output)
+            time2_match = re.search(r"Total time for \d+ reps of loop 2 = ([\d.]+)", output)
+
+            if not time1_match or not time2_match:
+                raise ValueError("Could not find time values in output.")
+
+            loop1_time = float(time1_match.group(1))
+            loop2_time = float(time2_match.group(1))
+
+            row = [n, schedule, "default", THREADS, REPS, loop1_time, loop2_time]
+            with open(results_file, mode='a', newline='') as file:
+                writer = csv.writer(file)
+                writer.writerow(row)
+
+        except (ValueError, IndexError) as e:
+            print(f"    [Error] Failed to parse output for N={n}, schedule={schedule}, chunk=default: {e}")
+            print(f"      Output was:\n---\n{output}\n---")
+
+    # Baseline run: single-thread, default scheduling (no explicit chunk)
+    print("  Running baseline: threads=1, default schedule...")
+
+    env = os.environ.copy()
+    env["OMP_NUM_THREADS"] = "1"
+    # Ensure no explicit schedule is set so runtime uses its default
+    env.pop("OMP_SCHEDULE", None)
+    # Optional: prevent dynamic teams from changing thread count
+    env["OMP_DYNAMIC"] = "FALSE"
+
+    result = subprocess.run(exe_file, shell=True, capture_output=True, text=True, env=env)
+
+    if result.returncode != 0:
+        print(f"    [Error] Baseline execution failed:\n{result.stderr}")
+        continue
+
+    output = result.stdout
+    try:
+        time1_match = re.search(r"Total time for \d+ reps of loop 1 = ([\d.]+)", output)
+        time2_match = re.search(r"Total time for \d+ reps of loop 2 = ([\d.]+)", output)
+
+        if not time1_match or not time2_match:
+            raise ValueError("Could not find time values in output.")
+
+        loop1_time = float(time1_match.group(1))
+        loop2_time = float(time2_match.group(1))
+
+        row = [n, "baseline", "n/a", 1, REPS, loop1_time, loop2_time]
+        with open(results_file, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(row)
+
+    except (ValueError, IndexError) as e:
+        print(f"    [Error] Failed to parse output for baseline N={n}: {e}")
+        print(f"      Output was:\n---\n{output}\n---")
 
 print(f"\nAll measurements completed. Results are saved in '{results_file}'")
