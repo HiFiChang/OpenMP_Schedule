@@ -4,8 +4,8 @@
 #include <math.h>
 #include <omp.h> 
 
-#define N 729
-#define reps 1000
+// #define N 729
+// #define reps 1000
 
 typedef struct time_struct
 {

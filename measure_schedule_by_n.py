@@ -17,9 +17,9 @@ results_file = os.path.join(results_dir, "schedule_by_n_results.csv")
 # Experiment parameters
 N_VALUES = [256, 512, 729, 1024, 1440, 2048, 2880, 4096, 6144, 8192]
 SCHEDULES = ["static", "dynamic", "guided"]
-CHUNK_SIZES = [1, 16, 64]
+CHUNK_SIZES = [1, 16, 64, 128]
 THREADS = os.cpu_count() or 8 # Use all available cores, or 8 as a fallback
-REPS = 1000 # Must match the 'reps' used in the C++ code if not passed via -D
+REPS = 50 # Must match the 'reps' used in the C++ code if not passed via -D
 
 # --- Setup ---
 # Ensure the bin and results directories exist, and clear them for a fresh run

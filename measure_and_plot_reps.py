@@ -11,17 +11,17 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 os.chdir(script_dir)
 
 # Paths
-bin_dir = "bin_reps"
-results_file = "reps_results.csv"
+bin_dir = "bin_reps_baseline"
+results_file = "reps_baseline_results.csv"
 
-# Fixed parameters
+# Fixed parameters for BASELINE test
 N = 2048  # Fixed matrix size
-SCHEDULE = "dynamic"  # Fixed schedule type
-CHUNK_SIZE = 16  # Fixed chunk size
-THREADS = os.cpu_count() or 8  # Use all available cores
+SCHEDULE = "baseline"  # Fixed schedule type
+CHUNK_SIZE = "n/a"  # Not applicable for baseline
+THREADS = 1  # Single thread for baseline
 
 # Variable parameter: REPS
-REPS_VALUES = [10, 50, 100, 200, 500, 1000, 2000, 5000]
+REPS_VALUES = [1, 5, 10, 50, 100, 200]
 
 # --- Setup ---
 # Ensure the bin directory exists and clear it for a fresh run
@@ -60,10 +60,12 @@ for reps in REPS_VALUES:
     # 2. Run the compiled executable
     print(f"  Running test...")
     
-    # Set environment variables for OpenMP
+    # Set environment variables for OpenMP (Baseline Configuration)
     env = os.environ.copy()
     env["OMP_NUM_THREADS"] = str(THREADS)
-    env["OMP_SCHEDULE"] = f"{SCHEDULE},{CHUNK_SIZE}"
+    # For baseline, we do not set OMP_SCHEDULE.
+    # Optional: prevent dynamic teams from changing thread count
+    env["OMP_DYNAMIC"] = "FALSE"
 
     # Run the command
     result = subprocess.run(exe_file, shell=True, capture_output=True, text=True, env=env)
@@ -118,7 +120,7 @@ axes[0].plot(df['reps'], df['loop1_time_s'], marker='o', linestyle='-', linewidt
 axes[0].plot(df['reps'], df['loop2_time_s'], marker='s', linestyle='-', linewidth=2, label='Loop 2', color='#A23B72')
 axes[0].set_xlabel('Number of Repetitions (reps)', fontsize=12)
 axes[0].set_ylabel('Total Execution Time (s)', fontsize=12)
-axes[0].set_title(f'Total Execution Time vs. REPS\n(N={N}, Schedule={SCHEDULE}, Chunk={CHUNK_SIZE}, Threads={THREADS})', fontsize=13)
+axes[0].set_title(f'Baseline Total Execution Time vs. REPS\n(N={N}, Threads={THREADS})', fontsize=13)
 axes[0].legend(fontsize=11)
 axes[0].grid(True, alpha=0.3)
 axes[0].set_xscale('log')
@@ -129,15 +131,16 @@ axes[1].plot(df['reps'], df['loop1_avg_time_ms'], marker='o', linestyle='-', lin
 axes[1].plot(df['reps'], df['loop2_avg_time_ms'], marker='s', linestyle='-', linewidth=2, label='Loop 2', color='#A23B72')
 axes[1].set_xlabel('Number of Repetitions (reps)', fontsize=12)
 axes[1].set_ylabel('Average Time per Iteration (ms)', fontsize=12)
-axes[1].set_title(f'Average Iteration Time vs. REPS\n(N={N}, Schedule={SCHEDULE}, Chunk={CHUNK_SIZE}, Threads={THREADS})', fontsize=13)
+axes[1].set_title(f'Baseline Average Iteration Time vs. REPS\n(N={N}, Threads={THREADS})', fontsize=13)
 axes[1].legend(fontsize=11)
 axes[1].grid(True, alpha=0.3)
 axes[1].set_xscale('log')
+axes[1].set_yscale('log')
 
 plt.tight_layout()
 
 # Save the figure
-output_filename = 'reps_analysis.png'
+output_filename = 'reps_analysis_baseline.png'
 plt.savefig(output_filename, dpi=150, bbox_inches='tight')
 print(f"Plot saved to '{output_filename}'")
 plt.close()
@@ -149,14 +152,14 @@ ax.plot(df['reps'], df['loop1_time_s'], marker='o', linestyle='-', linewidth=2, 
 ax.plot(df['reps'], df['loop2_time_s'], marker='s', linestyle='-', linewidth=2, label='Loop 2', color='#A23B72')
 ax.set_xlabel('Number of Repetitions (reps)', fontsize=12)
 ax.set_ylabel('Total Execution Time (s)', fontsize=12)
-ax.set_title(f'Linear Scale: Total Execution Time vs. REPS\n(N={N}, Schedule={SCHEDULE}, Chunk={CHUNK_SIZE}, Threads={THREADS})', fontsize=13)
+ax.set_title(f'Baseline Linear Scale: Total Execution Time vs. REPS\n(N={N}, Threads={THREADS})', fontsize=13)
 ax.legend(fontsize=11)
 ax.grid(True, alpha=0.3)
 
 plt.tight_layout()
 
 # Save the second figure
-output_filename2 = 'reps_analysis_linear.png'
+output_filename2 = 'reps_analysis_baseline_linear.png'
 plt.savefig(output_filename2, dpi=150, bbox_inches='tight')
 print(f"Plot saved to '{output_filename2}'")
 plt.close()
